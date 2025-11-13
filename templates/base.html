@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %} Stock Data Visualizer {% endblock %}</title>
+    <style>
+        body {
+            padding: 10px;
+        }
+        .title {
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <!-- <hr> -->
+    <div class="form_content">
+        <!-- display content -->
+        {% block form_content %} {% endblock %}
+    </div>
+</body>
+</html>
