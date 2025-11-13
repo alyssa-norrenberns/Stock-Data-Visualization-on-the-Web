@@ -1,39 +1,51 @@
 {% extends 'base.html' %}
 
 {% block form_content %}
-    <h1 class="title">Stock Data Visualizer</h1>
-    <p>Customize your selection!</p>
+    <h1 class="text-center">Stock Data Visualizer</h1>
+    <hr><br>
 
     <form>
-        <label for="symbol">Choose Stock Symbol:</label>
-        <select id="symbol" name="symbol" required>
-            <option value="none">Select a symbol</option>
-            <option value="AAPL">AAPL</option>
-            <option value="GOOGL">GOOGL</option>
-        </select><br>
+        <div class="form-group text-center">
+            <label for="symbol">Choose Stock Symbol:</label>
+            <select id="symbol" name="symbol" required>
+                <option value="none">Select a symbol</option>
+                <option value="AAPL">AAPL</option>
+                <option value="GOOGL">GOOGL</option>
+            </select>
+        </div>
 
-        <label for="chart_type">Choose Chart Type</label>
-        <select id="chart_type" name="chart_type" required>
-            <option value="none">Select a chart type</option>
-            <option value="bar">1. Bar Chart</option>
-            <option value="line">2. Line Chart</option>
-        </select><br>
+        <div class="form-group text-center">
+            <label for="chart_type">Choose Chart Type:</label>
+            <select id="chart_type" name="chart_type" required>
+                <option value="none">Select a chart type</option>
+                <option value="bar">1. Bar Chart</option>
+                <option value="line">2. Line Chart</option>
+            </select>
+        </div>
 
-        <label for="chart_type">Choose Time Series</label>
-        <select id="timeseries" name="timeseries" required>
-            <option value="none">Select a chart type</option>
-            <option value="intradaily">1. Intradaily</option>
-            <option value="daily">2. Daily</option>
-            <option value="weekly">3. Weekly</option>
-            <option value="monthly">4. Monthly</option>
-        </select><br>
+        <div class="form-group text-center">
+            <label for="chart_type">Choose Time Series:</label>
+            <select id="timeseries" name="timeseries" required>
+                <option value="none">Select a chart type</option>
+                <option value="intradaily">1. Intradaily</option>
+                <option value="daily">2. Daily</option>
+                <option value="weekly">3. Weekly</option>
+                <option value="monthly">4. Monthly</option>
+            </select>
+        </div>
 
-        <label for="start_date">Start Date:</label>
-        <input type="date" id="start_date" name="start_date" required><br>
+        <div class="form-group text-center">
+            <label for="start_date">Start Date:</label>
+            <input type="date" id="start_date" name="start_date" required><br>
+        </div>
 
-        <label for="end_date">End Date:</label>
-        <input type="date" id="end_date" name="end_date" required><br>
+        <div class="form-group text-center">
+            <label for="end_date">End Date:</label>
+            <input type="date" id="end_date" name="end_date" required>
+        </div>
 
-        <input type="submit" value="Submit">
+        <div class="form-group text-center">
+            <input class="btn btn-dark" type="submit" value="Submit">
+        </div>
     </form>
 {% endblock %}

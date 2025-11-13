@@ -3,20 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <title>{% block title %} Stock Data Visualizer {% endblock %}</title>
-    <style>
-        body {
-            padding: 10px;
-        }
-        .title {
-            text-align: center;
-        }
-    </style>
+
+    <!-- bootstrap stylesheet -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+    <!-- custom stylesheet -->
+    <link rel="stylesheet" href="../static/custom-styles.css">
 </head>
 <body>
-    <!-- <hr> -->
-    <div class="form_content">
-        <!-- display content -->
-        {% block form_content %} {% endblock %}
+            <!-- display content -->
+            {% block form_content %} {% endblock %}
+        </div>
     </div>
 </body>
 </html>

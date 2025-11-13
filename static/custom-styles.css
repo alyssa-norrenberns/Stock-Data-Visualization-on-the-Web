@@ -1,0 +1,19 @@
+body {
+    margin: 10px;
+    background-color: #d7fcc4;
+}
+
+hr {
+    max-width: 85%;
+    color: #bcdbad;
+    border-width: 0.1rem;
+}
+
+.foreground {
+    padding: 20px;
+    background-color: #fff;
+    border: 2.5px solid #bcdbad;
+    border-radius: 20px;
+    width: 60%;
+    margin: auto;
+}
