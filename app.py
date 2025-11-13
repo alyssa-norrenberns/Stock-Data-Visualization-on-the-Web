@@ -4,6 +4,7 @@ import pygal
 import webbrowser
 import os
 from flask import Flask, render_template, request, url_for, flash, redirect, abort
+import pandas as pd
 
 # make a Flask application object called app
 app = Flask(__name__)
@@ -12,9 +13,14 @@ app = Flask(__name__)
 app.config["DEBUG"] = True
 app.config['SECRET_KEY'] = 'your secret key' # move to .config or .env file in production
 
+# add stock info (Symbol, Name, Sector)
+stocks = pd.read_csv('./static/stocks.csv')
+stocks = stocks.drop('Sector', axis=1) # drop sector column
+stock_info = stocks.to_dict(orient='records') # convert to a list of dictionaries
+                                             
 @app.route('/')
 def index():
-    return render_template('index.html')
+    return render_template('index.html', stock_info=stock_info)
 
 app.run()
 # while True:

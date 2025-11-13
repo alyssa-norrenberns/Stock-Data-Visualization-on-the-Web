@@ -9,8 +9,10 @@
             <label for="symbol">Choose Stock Symbol:</label>
             <select id="symbol" name="symbol" required>
                 <option value="none">Select a symbol</option>
-                <option value="AAPL">AAPL</option>
-                <option value="GOOGL">GOOGL</option>
+                <!-- dynamically display all stock symbols -->
+                {% for stock in stock_info %}
+                <option value="{{ stock['Symbol'] }}">{{ stock['Symbol'] }}</option>
+                {% endfor %}
             </select>
         </div>
 
