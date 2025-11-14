@@ -18,8 +18,30 @@ stocks = pd.read_csv('./static/stocks.csv')
 stocks = stocks.drop('Sector', axis=1) # drop sector column
 stock_info = stocks.to_dict(orient='records') # convert to a list of dictionaries
                                              
-@app.route('/')
+@app.route('/', methods=('GET', 'POST'))
 def index():
+    if request.method == 'POST':
+        # get the stock symbol, chart type, time series, and dates from user input
+        symbol = request.form['symbol']
+        chart_type = request.form['chart_type']
+        timeseries = request.form['timeseries']
+        start_date = request.form['start_date']
+        end_date = request.form['end_date']
+
+        # error check the user input
+        if not symbol:
+            flash("Symbol is required.")
+        elif not chart_type:
+            flash("Chart type is required.")
+        elif not timeseries:
+            flash("Time series is required.")
+        elif end_date < start_date:
+            flash(f"End date cannot be earlier than the start date. Please enter a date earlier or equal to the start date ({start_date}).")
+        else:
+            # make API request
+            # generate + display chart
+            return render_template('chart.html', stock_info=stock_info, symbol=symbol, chart_type=chart_type, timeseries=timeseries)
+
     return render_template('index.html', stock_info=stock_info)
 
 app.run()

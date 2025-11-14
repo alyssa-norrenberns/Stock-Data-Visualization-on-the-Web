@@ -10,8 +10,17 @@
     <link rel="stylesheet" href="../static/custom-styles.css">
 </head>
 <body>
+    <div class="foreground">
+        <div class="form_content">
+            <!-- display  any flash messages when a page is loaded -->
+            {% for message in get_flashed_messages() %}
+                <div class="alert">{{ message }}</div>
+                <br>
+            {% endfor %}
+
             <!-- display content -->
             {% block form_content %} {% endblock %}
+
         </div>
     </div>
 </body>
