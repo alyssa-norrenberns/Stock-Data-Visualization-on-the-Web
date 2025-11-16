@@ -9,6 +9,13 @@ hr {
     border-width: 0.1rem;
 }
 
+.alert {
+    padding: 20px;
+    margin: 5px;
+    color: #970020;
+    background-color: #ffd5de;
+}
+
 .foreground {
     padding: 20px;
     background-color: #fff;

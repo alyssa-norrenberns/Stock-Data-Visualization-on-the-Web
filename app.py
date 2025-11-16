@@ -13,10 +13,18 @@ app.config['SECRET_KEY'] = 'your secret key' # move to .config or .env file in p
 
 api_key = "SI1O16E6XH389GHD"
 
+# convert string to datetime object
+def str_to_datetime(str_date):
+    return datetime.strptime(str_date, "%Y-%m-%d")
+
 # get the start month for intraday time series
 def get_start_year_month(start_date):
-    year = start_date.strftime("%Y")
-    month = start_date.strftime("%m")
+    # convert string to datetime
+    dt_start_date = str_to_datetime(start_date)
+
+    # isolate year and month
+    year = dt_start_date.strftime("%Y")
+    month = dt_start_date.strftime("%m")
     return (year + "-" + month)
 
 # create URL endpoints for API requests (returns URL)
@@ -103,13 +111,28 @@ def create_chart(data, symbol, chart_type, timeseries, start_date, end_date):
         print("\nError: No stock data found for the selected date range")
         exit(1)
 
+    # convert start and end dates to datetime
+    dt_start_date = str_to_datetime(start_date)
+    dt_end_date = str_to_datetime(end_date)
+
+    # calculate distance between start and end dates
+    distance = (dt_end_date - dt_start_date).days
+    print(f"distance between start and end date: {distance} day(s)")
+
     # create chart
     if chart_type == "bar":
-        chart = pygal.Bar(x_label_rotation=20)
+        # check distance to determine x-tick settings
+        if distance > 10:
+            chart = pygal.Bar(x_label_rotation=20, x_labels_major_every=10, show_minor_x_labels=False)
+        else: 
+            chart = pygal.Bar(x_label_rotation=20)
     else:
+        # check distance to determine x-tick settings
+        if distance > 10:
+            chart = pygal.Line(x_label_rotation=20, x_labels_major_every=10, show_minor_x_labels=False)
         chart = pygal.Line(x_label_rotation=20)
 
-    chart.title = f"Stock Data for {symbol.upper()}: {start_date} to {end_date}"
+    chart.title = f"{timeseries.capitalize()} Stock Data for {symbol.upper()}: {start_date} to {end_date}"
     chart.x_labels = dates
     chart.add('Open', open_prices)
     chart.add('High', high_prices)

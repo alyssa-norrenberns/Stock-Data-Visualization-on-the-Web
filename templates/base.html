@@ -17,15 +17,12 @@
 
             <!-- display  any flash messages when a page is loaded -->
             {% for message in get_flashed_messages() %}
-                <div class="alert">{{ message }}</div>
+                <div class="alert text-center">{{ message }}</div>
             {% endfor %}
 
             <!-- display chart -->
              {% block chart %} {% endblock %}
         </div>
     </div>
-
-    <!-- custom script -->
-    <script src="../static/index.js"></script>
 </body>
 </html>
