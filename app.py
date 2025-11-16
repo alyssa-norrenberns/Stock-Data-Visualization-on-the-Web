@@ -1,8 +1,6 @@
 from datetime import datetime, timedelta
 import requests
 import pygal
-import webbrowser
-import os
 from flask import Flask, render_template, request, url_for, flash, redirect, abort
 import pandas as pd
 
@@ -12,6 +10,116 @@ app = Flask(__name__)
 # set up app to reload upon changes - used in development only
 app.config["DEBUG"] = True
 app.config['SECRET_KEY'] = 'your secret key' # move to .config or .env file in production
+
+api_key = "SI1O16E6XH389GHD"
+
+# get the start month for intraday time series
+def get_start_year_month(start_date):
+    year = start_date.strftime("%Y")
+    month = start_date.strftime("%m")
+    return (year + "-" + month)
+
+# create URL endpoints for API requests (returns URL)
+def create_url_endpoint(timeseries, symbol, start_date, api_key):
+    if timeseries == "intradaily":
+        function = "TIME_SERIES_INTRADAY"
+        interval = "5min"
+        month = get_start_year_month(start_date)
+        return f'https://www.alphavantage.co/query?function={function}&symbol={symbol}&outputsize=full&interval={interval}&month={month}&apikey={api_key}'
+    elif timeseries == "daily":
+        function = "TIME_SERIES_DAILY"
+        return f'https://www.alphavantage.co/query?function={function}&symbol={symbol}&outputsize=full&apikey={api_key}'
+    elif timeseries == "weekly":
+        function = "TIME_SERIES_WEEKLY"
+        return f'https://www.alphavantage.co/query?function={function}&symbol={symbol}&apikey={api_key}'
+    elif timeseries == "monthly":
+        function = "TIME_SERIES_MONTHLY"
+        return f'https://www.alphavantage.co/query?function={function}&symbol={symbol}&apikey={api_key}'
+
+# fetch API data from URL (returns None upon error)
+def get_api_data(url):
+
+    r = requests.get(url)
+    data = r.json()
+
+    # err check: network/api failure
+    if r.status_code != 200:
+        print("\nError: Failed to retrieve data from API")
+        return None
+    
+    if not isinstance(data,dict):
+        print("\nError: Unexpected API response")
+        return None
+
+    # err checks: api error / rate-limit notice
+    if "Error Message" in data:
+        print("\nError: Invalid symbol or API request")
+        return None
+
+    if "Note" in data:
+        print("\nAPI rate limit reached, please try again later")
+        return None
+    
+    return data
+
+# format data and generate chart (returns chart file name)
+def create_chart(data, symbol, chart_type, timeseries, start_date, end_date):
+
+    # check for valid data
+    time_series_key = None
+    for key in data:
+        if "Time Series" in key:
+            time_series_key = key
+            break
+
+    if not time_series_key:
+        print("Error: Time series data not found in the response.")
+        exit(1)
+
+    # format data for chart
+    raw_series = data[time_series_key]
+
+    dates = []
+    open_prices = []
+    high_prices = []
+    low_prices = []
+    close_prices = []
+
+    for date_str in sorted(raw_series.keys(), reverse=False):
+        if timeseries == "intradaily":
+            dt = datetime.strptime(date_str, "%Y-%m-%d %H:%M:%S")
+        else:
+            dt = datetime.strptime(date_str, "%Y-%m-%d")
+
+        if start_date <= str(dt.date()) <= end_date:
+            dates.append(date_str)
+            open_prices.append(float(raw_series[date_str]['1. open']))
+            high_prices.append(float(raw_series[date_str]['2. high']))
+            low_prices.append(float(raw_series[date_str]['3. low']))
+            close_prices.append(float(raw_series[date_str]['4. close']))
+
+    # error check: no data in selected range
+    if not dates:
+        print("\nError: No stock data found for the selected date range")
+        exit(1)
+
+    # create chart
+    if chart_type == "bar":
+        chart = pygal.Bar(x_label_rotation=20)
+    else:
+        chart = pygal.Line(x_label_rotation=20)
+
+    chart.title = f"Stock Data for {symbol.upper()}: {start_date} to {end_date}"
+    chart.x_labels = dates
+    chart.add('Open', open_prices)
+    chart.add('High', high_prices)
+    chart.add('Low', low_prices)
+    chart.add('Close', close_prices)
+
+    # Render to file in static folder
+    chart_file = 'stock_chart.svg'
+    chart.render_to_file('static/' + chart_file)
+    return chart_file
 
 # add stock info (Symbol, Name, Sector)
 stocks = pd.read_csv('./static/stocks.csv')
@@ -39,202 +147,20 @@ def index():
             flash(f"End date cannot be earlier than the start date. Please enter a date earlier or equal to the start date ({start_date}).")
         else:
             # make API request
-            # generate + display chart
-            return render_template('chart.html', stock_info=stock_info, symbol=symbol, chart_type=chart_type, timeseries=timeseries)
+            url = create_url_endpoint(timeseries, symbol, start_date, api_key)
+            data = get_api_data(url)
+            
+            if data is None:
+                flash("Unable to retrieve data. Please try again.")
+                return render_template('index.html', stock_info=stock_info)
+            
+            # generate chart
+            chart_file = create_chart(data, symbol, chart_type, timeseries, start_date, end_date)
+
+            # send url to be displayed via chart template        
+            chart_file_url = url_for('static', filename=chart_file)
+            return render_template('chart.html', stock_info=stock_info, chart=chart_file_url)
 
     return render_template('index.html', stock_info=stock_info)
 
 app.run()
-# while True:
-# Main program
-# api_key = "SI1O16E6XH389GHD"
-
-# # print("\n---------------------")
-# # print("Stock Data Visualizer")
-# # print("---------------------")
-
-# symbol = input("\nEnter the stock symbol you are looking for: ")
-
-# #error check for valid stock symbol
-# if not symbol.isalpha():
-#     print("\nError: stock symbols must contain letters only")
-#     exit(1)
-
-# # Validate chart type
-# while True:
-#     print("\nChart Types")
-#     print("-------------")
-#     print("1. Bar")
-#     print("2. Line")
-    
-#     chart_type = input("\nEnter the chart type you want (1, 2): ")
-
-#     if chart_type in ("1", "2"):
-#         break
-    
-#     print("\nInvalid selection. Please enter 1 or 2.")
-
-# # Validate time series
-# while True:
-#     print("\nSelect the Time Series of the chart you want to Generate")
-#     print("----------------------------------------------------------")
-#     print("1. Intraday")
-#     print("2. Daily")
-#     print("3. Weekly")
-#     print("4. Monthly")
-
-#     time_series = input("\nEnter time series option (1, 2, 3, 4): ")
-
-#     if time_series in ("1", "2", "3", "4"):
-#         break
-
-#     print("\nInvalid selection. Please enter 1, 2, 3, or 4.")
-
-# # Set the start date limit based on API documentation
-# start_date_limit = datetime(2000, 1, 1).date()
-
-# # Validate start date
-# while True:
-#     start_str = input("\nEnter the start date (YYYY-MM-DD): ")
-#     try:
-#         start_date = datetime.strptime(start_str, "%Y-%m-%d").date()
-
-#         # Compare start date with current date
-#         if (start_date > datetime.now().date()):
-#             print(f"\nStart date cannot be later than today's date. Please enter a date earlier or equal to today's date ({datetime.now().strftime("%Y-%m-%d")}).")     
-#             continue
-#         # Determine if the start date is within the supported date range and re-prompt if needed
-#         if (start_date >= start_date_limit):
-#             break           
-#         else:
-#             print(f"\nData before {start_date_limit} is not supported. Please enter a later or equal date.")         
-
-#     except ValueError:
-#         print("\nInvalid date format. Please enter date as YYYY-MM-DD.")
-
-# # Validate end date (YYYY-MM-DD) and ensure it is not earlier than start_date
-# while True:
-#     end_str = input("\nEnter the end date (YYYY-MM-DD): ")
-#     try:
-#         end_date = datetime.strptime(end_str, "%Y-%m-%d").date()
-#     except ValueError:
-#         print("\nInvalid date format. Please enter date as YYYY-MM-DD.")
-#         continue
-
-#     if end_date < start_date:
-#         print("\nEnd date cannot be earlier than start date. Please enter a later or equal date.")
-#         continue
-
-#     break
-
-# # Get the start month for intraday time series
-# def get_start_year_month(start_date):
-#     year = start_date.strftime("%Y")
-#     month = start_date.strftime("%m")
-#     return (year + "-" + month)
-
-# # Create URL endpoints for API requests
-# if time_series == "1":
-#     function = "TIME_SERIES_INTRADAY"
-#     interval = "5min"
-#     month = get_start_year_month(start_date)
-#     url = f'https://www.alphavantage.co/query?function={function}&symbol={symbol}&outputsize=full&interval={interval}&month={month}&apikey={api_key}'
-# elif time_series == "2":
-#     function = "TIME_SERIES_DAILY"
-#     url = f'https://www.alphavantage.co/query?function={function}&symbol={symbol}&outputsize=full&apikey={api_key}'
-# elif time_series == "3":
-#     function = "TIME_SERIES_WEEKLY"
-#     url = f'https://www.alphavantage.co/query?function={function}&symbol={symbol}&apikey={api_key}'
-# elif time_series == "4":
-#     function = "TIME_SERIES_MONTHLY"
-#     url = f'https://www.alphavantage.co/query?function={function}&symbol={symbol}&apikey={api_key}'
-
-# r = requests.get(url)
-# data = r.json()
-
-# # err check: network/api failure
-# if r.status_code != 200:
-#     print("\nError: Failed to retrieve data from API")
-#     exit(1)
-
-# if not isinstance(data,dict):
-#     print("\nError: Unexpected API response")
-#     exit(1)
-
-# # err checks: api error / rate-limit notice
-# if "Error Message" in data:
-#     print("\nError: Invalid symbol or API request")
-#     exit(1)
-
-# if "Note" in data:
-#     print("\nAPI rate limit reached, please try again later")
-#     exit(1)
-
-
-# #Checking for valid data
-# time_series_key = None
-# for key in data:
-#     if "Time Series" in key:
-#         time_series_key = key
-#         break
-
-# if not time_series_key:
-#     print("Error: Time series data not found in the response.")
-#     exit(1)
-
-# #Format data for chart
-# raw_series = data[time_series_key]
-
-# dates = []
-# open_prices = []
-# high_prices = []
-# low_prices = []
-# close_prices = []
-
-# for date_str in sorted(raw_series.keys(), reverse=False):
-#     if time_series == "1":
-#         dt = datetime.strptime(date_str, "%Y-%m-%d %H:%M:%S")
-#     else:
-#         dt = datetime.strptime(date_str, "%Y-%m-%d")
-
-#     if start_date <= dt.date() <= end_date:
-#         dates.append(date_str)
-#         open_prices.append(float(raw_series[date_str]['1. open']))
-#         high_prices.append(float(raw_series[date_str]['2. high']))
-#         low_prices.append(float(raw_series[date_str]['3. low']))
-#         close_prices.append(float(raw_series[date_str]['4. close']))
-
-# # error check: no data in selected range
-# if not dates:
-#     print("\nError: No stock data found for the selected date range")
-#     exit(1)
-
-
-# # Create chart
-# if chart_type == "1":
-#     chart = pygal.Bar(x_label_rotation=20)
-# else:
-#     chart = pygal.Line(x_label_rotation=20)
-
-# chart.title = f"Stock Data for {symbol.upper()}: {start_date} to {end_date}"
-# chart.x_labels = dates
-# chart.add('Open', open_prices)
-# chart.add('High', high_prices)
-# chart.add('Low', low_prices)
-# chart.add('Close', close_prices)
-
-# # Render to file and open in browser
-# chart_file = 'stock_chart.svg'
-# chart.render_to_file(chart_file)
-
-# # Open in default browser
-# file_url = 'file://' + os.path.realpath(chart_file)
-# webbrowser.open(file_url)
-
-# print(f"\nChart generated and opened in browser: {chart_file}")
-
-# # Loop to re-run program
-# again = input("\nWould you like to search another stock? (y/n): ").lower()
-# if again != 'y':
-#     print("\nThanks for using Stock Data Visualizer! Goodbye!")
-#     break

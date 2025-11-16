@@ -12,16 +12,20 @@
 <body>
     <div class="foreground">
         <div class="form_content">
-            <!-- display  any flash messages when a page is loaded -->
-            {% for message in get_flashed_messages() %}
-                <div class="alert">{{ message }}</div>
-                <br>
-            {% endfor %}
-
             <!-- display content -->
             {% block form_content %} {% endblock %}
 
+            <!-- display  any flash messages when a page is loaded -->
+            {% for message in get_flashed_messages() %}
+                <div class="alert">{{ message }}</div>
+            {% endfor %}
+
+            <!-- display chart -->
+             {% block chart %} {% endblock %}
         </div>
     </div>
+
+    <!-- custom script -->
+    <script src="../static/index.js"></script>
 </body>
 </html>
