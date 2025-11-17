@@ -47,8 +47,14 @@ def create_url_endpoint(timeseries, symbol, start_date, api_key):
 # fetch API data from URL (returns None upon error)
 def get_api_data(url):
 
+    print("Requesting URL:", url)
     r = requests.get(url)
-    data = r.json()
+    try:
+        data = r.json()
+    except Exception as e:
+        print("Error parsing JSON response:", e)
+        print("Response text (truncated):", r.text[:1000])
+        return None
 
     # err check: network/api failure
     if r.status_code != 200:
@@ -82,7 +88,7 @@ def create_chart(data, symbol, chart_type, timeseries, start_date, end_date):
 
     if not time_series_key:
         print("Error: Time series data not found in the response.")
-        exit(1)
+        return None
 
     # format data for chart
     raw_series = data[time_series_key]
@@ -109,7 +115,7 @@ def create_chart(data, symbol, chart_type, timeseries, start_date, end_date):
     # error check: no data in selected range
     if not dates:
         print("\nError: No stock data found for the selected date range")
-        exit(1)
+        return None
 
     # convert start and end dates to datetime
     dt_start_date = str_to_datetime(start_date)
@@ -121,16 +127,21 @@ def create_chart(data, symbol, chart_type, timeseries, start_date, end_date):
 
     # create chart
     if chart_type == "bar":
-        # check distance to determine x-tick settings
-        if distance > 10:
-            chart = pygal.Bar(x_label_rotation=20, x_labels_major_every=10, show_minor_x_labels=False)
+        # check timeseries and distance to determine x-tick settings
+        if timeseries == "intradaily":
+            chart = pygal.Bar(x_label_rotation=20, x_labels_major_every=75, show_minor_x_labels=False)
+        # elif distance > 5:
+        #     chart = pygal.Bar(x_label_rotation=20, x_labels_major_every=5, show_minor_x_labels=False)
         else: 
             chart = pygal.Bar(x_label_rotation=20)
     else:
-        # check distance to determine x-tick settings
-        if distance > 10:
-            chart = pygal.Line(x_label_rotation=20, x_labels_major_every=10, show_minor_x_labels=False)
-        chart = pygal.Line(x_label_rotation=20)
+        # check timeseries and distance to determine x-tick settings
+        if timeseries == "intradaily":
+            chart = pygal.Line(x_label_rotation=20, x_labels_major_every=45, show_minor_x_labels=False)
+        # elif distance > 5:
+        #     chart = pygal.Line(x_label_rotation=20, x_labels_major_every=5, show_minor_x_labels=False)
+        else:
+            chart = pygal.Line(x_label_rotation=20)
 
     chart.title = f"{timeseries.capitalize()} Stock Data for {symbol.upper()}: {start_date} to {end_date}"
     chart.x_labels = dates
@@ -148,7 +159,7 @@ def create_chart(data, symbol, chart_type, timeseries, start_date, end_date):
 stocks = pd.read_csv('./static/stocks.csv')
 stocks = stocks.drop('Sector', axis=1) # drop sector column
 stock_info = stocks.to_dict(orient='records') # convert to a list of dictionaries
-                                             
+
 @app.route('/', methods=('GET', 'POST'))
 def index():
     if request.method == 'POST':
@@ -180,10 +191,15 @@ def index():
             # generate chart
             chart_file = create_chart(data, symbol, chart_type, timeseries, start_date, end_date)
 
+            if chart_file is None:
+                flash("Unable to generate chart. Please try again.")
+                return render_template('index.html', stock_info=stock_info)
+
             # send url to be displayed via chart template        
             chart_file_url = url_for('static', filename=chart_file)
             return render_template('chart.html', stock_info=stock_info, chart=chart_file_url)
 
     return render_template('index.html', stock_info=stock_info)
 
-app.run()
+# tells the application in the container to listen on all ports
+app.run(host="0.0.0.0")

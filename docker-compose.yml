@@ -1,0 +1,16 @@
+services:
+  web:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    image: stock_data_viz_app_image_flask
+    container_name: flask_stock_data_viz
+    # port forwarding - localhost:container
+    ports:
+      - "5005:5000"
+    # use current directory files as volume (data) for /app container files
+    volumes:
+      - .:/app
+    environment:
+    # run app in debug mode
+      FLASK_DEBUG: "1"
